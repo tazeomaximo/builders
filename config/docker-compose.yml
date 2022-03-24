@@ -1,0 +1,53 @@
+version: '3.5'
+services:
+
+    mysql-container:
+        image: mysql/mysql-server:latest
+        container_name: mysql-builders
+        ports:
+            - 3306:3306
+        environment:
+            MYSQL_ROOT_PASSWORD: rootbuilders
+            MYSQL_DATABASE: builders
+            MYSQL_USER: builders
+            MYSQL_PASSWORD: builders
+        volumes:
+        - ./db:/docker-entrypoint-initdb.d
+        networks:
+            - builders-network
+            
+ #   redis-container:
+ #       image: redis
+ #       container_name: redis-builders
+ #       ports:
+ #           - "6379:6379"
+ #       volumes:
+ #       - ./redis.conf:/usr/local/etc/redis/redis.conf
+ #       networks:
+ #           - builders-network
+ #   
+ #   app-builders-container:
+ #       image: img-builders
+ #       container_name: app-builders
+ #       ports:
+ #           - "8082:8082"
+ #       environment:
+ #          REDIS_HOST: redis-builders
+ #          REDIS_PORT: 6379
+ #          MYSQL_HOST: mysql-builders
+ #          MYSQL_PORT: 3306
+ #          MYSQL_DATABASE: builders
+ #          MYSQL_USER_NAME: builders
+ #          MYSQL_PASSWORD: builders
+ #          TOKEN_REFRESH: 240
+ #          TOKEN_ACCESS_TIME: 120
+ #          PROFILES_ACTIVE: dev
+ #       depends_on:
+ #           - mysql-container
+ #           - redis-container
+ #       networks:
+ #           - builders-network            
+            
+networks: 
+  builders-network:
+    driver: bridge          
