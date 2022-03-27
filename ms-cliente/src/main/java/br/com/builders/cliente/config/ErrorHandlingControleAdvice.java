@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -86,7 +87,18 @@ public class ErrorHandlingControleAdvice {
 		
 		ValidationErroDto error = new ValidationErroDto(new ArrayList<ViolationDto>());
 		
-		error.getViolations().add(new ViolationDto("id", "Formato inválido"));
+		error.getViolations().add(new ViolationDto("", "Formato inválido"));
+		return error;
+	}
+	
+	@ExceptionHandler( ConversionFailedException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	@ResponseBody
+	public ValidationErroDto onConversionFailedException(ConversionFailedException e) {
+		
+		ValidationErroDto error = new ValidationErroDto(new ArrayList<ViolationDto>());
+		
+		error.getViolations().add(new ViolationDto("", "Formato inválido"));
 		return error;
 	}
 

@@ -1,12 +1,14 @@
 package br.com.builders.cliente.service.impl;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import javax.validation.Valid;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ClienteServiceImpl implements ClienteService {
 
+	private static final String O_CAMPO_DE_PESQUISA_NAO_EXISTE = "O campo de pesquisa não existe";
+	private static final String OPERATION_EQUAL = ":";
+	private static final String DATA_NASCIMENTO = "dataNascimento";
+	private static final String IDADE = "idade";
+	private static final String DD_MM_YYYY = "dd/MM/yyyy";
+	private static final String DATA_DE_NASCIMENTO_DEVE_SER_VALIDA = "Data de nascimento deve ser válida";
+	private static final String IDADE_DEVE_SER_UM_NUMERO = "Idade deve ser um número";
 	private static final String ID = "id";
 	private static final String EMAIL = "email";
 	private static final String CPF = "cpf";
@@ -63,10 +73,10 @@ public class ClienteServiceImpl implements ClienteService {
 	public PageImpl<Cliente> getTodosCliente(Integer page, Integer size, Sort.Direction sortDir, String sort,
 			String field, String search) {
 
-		if ("idade".equalsIgnoreCase(sort)) {
-			sort = "dataNascimento";
+		if (IDADE.equalsIgnoreCase(sort)) {
+			sort = DATA_NASCIMENTO;
 		}
-			
+		
 		validarExistenciaDeCampo(sort);
 		
 		PageRequest pageReq = PageRequest.of(page, size, sortDir, sort);
@@ -74,28 +84,68 @@ public class ClienteServiceImpl implements ClienteService {
 		if(Objects.isNull(field)) {
 			return clienteRepository.findAll(pageReq);
 		}
-
-		validarExistenciaDeCampo(field); 
 		
 		if(Objects.isNull(search))
 			throw new BadRequestException("Search é obrigatório", "search");
 		
-		ClienteSpecification spec = new ClienteSpecification(new SearchCriteria(field, ":", search));
+		Specification<Cliente> spec = null;
+		
+		if (IDADE.equalsIgnoreCase(field)) {
+			field = DATA_NASCIMENTO;
+			spec = montaFiltroIdade(field, search);
+		}else if(DATA_NASCIMENTO.equalsIgnoreCase(field)){
+			spec = montaFiltroDtNasc(field, search);
+		}else {
+			spec = new ClienteSpecification(new SearchCriteria(field, OPERATION_EQUAL, search));
+		}
+
+		validarExistenciaDeCampo(field); 
 
 		Page<Cliente> pageCliente = clienteRepository.findAll(spec, pageReq);
 
-		if(pageCliente.getContent().isEmpty())
+		if(pageCliente.getContent().isEmpty() && pageCliente.getTotalElements() == 0)
 			throw clienteNaoEncontradoException(field);
+		
+		if(pageCliente.getTotalPages() <= page)
+			throw new BadRequestException("Página maior que o total ("+pageCliente.getTotalPages()+").", "page"); 
 		
 		return (PageImpl<Cliente>) pageCliente;
 	}
 
+	private Specification<Cliente> montaFiltroDtNasc(String field, String search) {
+		Specification<Cliente> spec = null;
+		try {
+			LocalDate dateSearch = LocalDate.parse(search, DateTimeFormatter.ofPattern(DD_MM_YYYY));
+			spec = new ClienteSpecification(new SearchCriteria(field, OPERATION_EQUAL, dateSearch));
+		}catch(DateTimeParseException e) {
+			log.error("Erro ao formatar dataNascimento: {}", search);
+			throw new BadRequestException(DATA_DE_NASCIMENTO_DEVE_SER_VALIDA, DATA_NASCIMENTO);
+		}
+		return spec;
+	}
+
+	private Specification<Cliente> montaFiltroIdade(String field, String search) {
+		Specification<Cliente> specReturn = null;
+		try {
+			LocalDate dateSearch = LocalDate.now().minusYears(Integer.parseInt(search));
+			LocalDate initDateSearch = LocalDate.of(dateSearch.getYear(), 1, 1);
+			LocalDate endDateSearch = LocalDate.of(dateSearch.getYear(), 12, 31);
+			
+			ClienteSpecification spec = new ClienteSpecification(new SearchCriteria(field, "<", endDateSearch));
+			specReturn = Specification.where(spec).and(new ClienteSpecification(new SearchCriteria(field, ">", initDateSearch)));
+		}catch(NumberFormatException e) {
+			log.error("Erro ao formatar ano da idade: {}", search);
+			throw new BadRequestException(IDADE_DEVE_SER_UM_NUMERO, IDADE);
+		}
+		return specReturn;
+	}
+	
 	private void validarExistenciaDeCampo(String field) {
 		try {
 			Cliente.class.getDeclaredField(field);
 		} catch (NoSuchFieldException e) {
 			log.error("Campo {} nao existe", field);
-			throw new BadRequestException("O campo de pesquisa não existe", field);
+			throw new BadRequestException(O_CAMPO_DE_PESQUISA_NAO_EXISTE, field);
 		} catch (SecurityException e) {
 			log.error("Erro: {}", e);
 			throw e;
@@ -108,7 +158,7 @@ public class ClienteServiceImpl implements ClienteService {
 	}
 
 	@Override
-	public Long cadastrarCliente(@Valid ClienteDto clienteDto) {
+	public Long cadastrarCliente(ClienteDto clienteDto) {
 
 		if (clienteRepository.existsByEmail(clienteDto.getEmail()).isPresent())
 			throw emailJaExisteException();
@@ -123,13 +173,14 @@ public class ClienteServiceImpl implements ClienteService {
 
 	@Override
 	public void atualizarTodosCamposDoCliente(ClienteDto clienteDto) {
+		validarClienteExistente(clienteDto);
+
 		if (clienteRepository.existsByEmail(clienteDto.getEmail(), clienteDto.getId()).isPresent())
 			throw emailJaExisteException();
 
 		if (clienteRepository.existsByCpf(clienteDto.getCpfSemFormatar(), clienteDto.getId()).isPresent())
 			throw cpfJaExisteException();
 
-		validarClienteExistente(clienteDto);
 
 		clienteRepository.save(clienteDto.toEntity());
 
@@ -141,25 +192,17 @@ public class ClienteServiceImpl implements ClienteService {
 	}
 
 	@Override
-	public Cliente findCliente(Long id) {
-		Cliente cliente = clienteRepository.findById(id).orElseThrow(() -> clienteNaoEncontradoException(ID));
-
-		return cliente;
-
-	}
-
-	@Override
 	public void atualizarParcialmenteDadosDoCliente(ClienteDto clienteDto) {
 		Cliente cliente = clienteRepository.findById(clienteDto.getId())
 				.orElseThrow(() -> clienteNaoEncontradoException(ID));
 
-		Cliente clienteUpdated = atualizarAtributos(clienteDto, cliente);
+		ClienteDto clienteUpdated = atualizarAtributos(clienteDto, cliente.toDto());
 
-		validarDados(clienteUpdated.toDto());
+		validarDados(clienteUpdated);
 
 		validarValoresJaExistentes(clienteDto);
 
-		clienteRepository.save(clienteUpdated);
+		clienteRepository.save(clienteUpdated.toEntity());
 	}
 
 	private void validarValoresJaExistentes(ClienteDto clienteDto) {
@@ -172,12 +215,12 @@ public class ClienteServiceImpl implements ClienteService {
 			throw cpfJaExisteException();
 	}
 
-	private Cliente atualizarAtributos(ClienteDto clienteDto, Cliente cliente) {
-		Cliente clienteUpdated = null;
+	private ClienteDto atualizarAtributos(ClienteDto clienteDto, ClienteDto clienteDtoBD) {
+		ClienteDto clienteUpdated = null;
 		try {
 			String json = objectMapper.writeValueAsString(clienteDto);
 
-			clienteUpdated = objectMapper.readerForUpdating(cliente).readValue(json);
+			clienteUpdated = objectMapper.readerForUpdating(clienteDtoBD).readValue(json);
 
 		} catch (IOException e) {
 			log.error("Erro ao tentar atualizar cliente. {}", e);

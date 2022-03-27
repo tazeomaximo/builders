@@ -39,7 +39,10 @@ public class ClienteController {
 	private ClienteService clienteService;
 
 	@GetMapping
-	@ApiOperation(value = "Recuperar todos os Clientes", notes = "")
+	@ApiOperation(value = "Recuperar todos os Clientes", 
+					notes = "O parâmetro <b>page</b> começa com o número zero (0)<br>"
+							+ "O parâmetro <b>page,size</b> devem ser numérico<br>"
+							+ "O parâmetro <b>sortDir</b> devem ser ASC ou DESC <br>")
 	@ApiResponses(value = { 
 			@ApiResponse(code = 200, message = "Sucesso", response = ClienteDto[].class),
 			@ApiResponse(code = 206, message = "Existe mais registro para paginação"),
