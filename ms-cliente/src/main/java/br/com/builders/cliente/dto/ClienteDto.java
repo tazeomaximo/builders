@@ -7,6 +7,8 @@ import java.util.Objects;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -29,7 +31,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder(value = {"id", "nome", "cpf", "e_mail", "data_nascimento"})
+@JsonPropertyOrder(value = {"id", "nome", "cpf", "email", "data_nascimento"})
 public class ClienteDto implements Serializable{
 
 	/**
@@ -47,10 +49,13 @@ public class ClienteDto implements Serializable{
 	@NotBlank(message = "O cpf é obrigatório")
 	private String cpf;
 	
-	@Email
-	@ApiModelProperty(name = "e_mail", example = "gutodarbem@gmail.com")
+	@Email(message = "O e-mail não é válido",regexp = "^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	@NotBlank(message = "O email é obrigatório")
+	@ApiModelProperty(name = "email", example = "gutodarbem@gmail.com")
 	private String email;
 	
+	@NotNull(message = "Data de nascimento é obrigatória")
+	@Past(message = "Data de nascimento deve ser uma data passada")
 	@ApiModelProperty(name = "data_nascimento", example = "16/12/1987")
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
 	private LocalDate dataNascimento;
@@ -63,9 +68,14 @@ public class ClienteDto implements Serializable{
 	}
 	
 	@JsonIgnore
+	public String getCpfSemFormatar() {
+		return this.cpf == null ? null : this.cpf.replaceAll("\\D", "");
+	}
+	
+	@JsonIgnore
 	public Cliente toEntity() {
 		return Cliente.builder()
-				.cpf(this.cpf)
+				.cpf(getCpfSemFormatar())
 				.dataNascimento(this.dataNascimento)
 				.email(this.email)
 				.id(this.id)

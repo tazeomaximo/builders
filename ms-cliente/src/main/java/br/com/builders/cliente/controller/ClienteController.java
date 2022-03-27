@@ -23,28 +23,29 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.builders.cliente.dto.ClienteDto;
+import br.com.builders.cliente.dto.ValidationErroDto;
 import br.com.builders.cliente.entity.Cliente;
 import br.com.builders.cliente.service.ClienteService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RestController
 @RequestMapping(value = "/cliente", produces = "application/json;charset=UTF-8")
 public class ClienteController {
 	
 	@Autowired
-	private ClienteService cliente;
+	private ClienteService clienteService;
 
 	@GetMapping
 	@ApiOperation(value = "Recuperar todos os Clientes", notes = "")
 	@ApiResponses(value = { 
-			@ApiResponse(code = 200, message = "Sucesso"),
+			@ApiResponse(code = 200, message = "Sucesso", response = ClienteDto[].class),
 			@ApiResponse(code = 206, message = "Existe mais registro para paginação"),
+			@ApiResponse(code = 400, message = "Algum dado está incorreto.", response = ValidationErroDto.class),
 			@ApiResponse(code = 403, message = "Acesso negado"),
+			@ApiResponse(code = 404, message = "Nenhum cliente encontrado", response = ValidationErroDto.class),
 			@ApiResponse(code = 500, message = "Erro ao processar sua requisição") })
 	public ResponseEntity<List<ClienteDto>>  findAllCliente(
 			@ApiParam(value = "Página", required = false, allowEmptyValue = true, example = "0", type = "int", name = "page") 
@@ -56,13 +57,16 @@ public class ClienteController {
 			@ApiParam(value = "Pesquisar", required = false, allowEmptyValue = true, example = "Luis", type = "string", name = "search")
 			@RequestParam(required = false, name = "search") final String search,
 			
+			@ApiParam(value = "Campo Pesquisar", required = false, allowEmptyValue = true, example = "nome", type = "string", name = "field")
+			@RequestParam(required = false, name = "field") final String field,
+			
 			@ApiParam(value = "Direção", required = false, allowEmptyValue = true, example = "ASC", type = "string", name = "sortDir")
 			@RequestParam(required = false, name = "sortDir", defaultValue = "ASC") Sort.Direction sortDir,
 			
 			@ApiParam(value = "Campo para ordenacao", required = false, allowEmptyValue = true, example = "nome", type = "string", name = "sort")
-			@RequestParam(required = false, name = "ordernar", defaultValue = "nome") String sort) {
+			@RequestParam(required = false, name = "sort", defaultValue = "nome") String sort) {
 		
-		PageImpl<Cliente> pageImpl = cliente.getTodosCliente(page, size, sortDir, sort);
+		PageImpl<Cliente> pageImpl = clienteService.getTodosCliente(page, size, sortDir, sort, field, search);
 		
 		HttpStatus httpStatus = HttpStatus.PARTIAL_CONTENT;
 		
@@ -76,66 +80,77 @@ public class ClienteController {
 	@ApiOperation(value = "Recuperar Cliente por Identificador", notes = "")
 	@ApiResponses(value = { 
 			@ApiResponse(code = 200, message = "Sucesso"),
+			@ApiResponse(code = 400, message = "Algum dado está incorreto.", response = ValidationErroDto.class),
 			@ApiResponse(code = 403, message = "Acesso negado"),
+			@ApiResponse(code = 404, message = "Nenhum cliente encontrado", response = ValidationErroDto.class),
 			@ApiResponse(code = 500, message = "Erro ao processar sua requisição") })
 	@ResponseBody
-	public Cliente getCliente(
+	public ClienteDto getCliente(
 			@ApiParam(value = "Identificador", required = true, allowEmptyValue = false, example = "0", type = "int", name = "id") 
 			@PathVariable(required = false, name = "id") final Long id) {
 
-		log.info("Deu certo");
-		return null;
+		return clienteService.getClienteById(id).toDto();
 	}
 	
 	@PostMapping
-	@ApiOperation(value = "Cadastrar Cliente", notes = "")
+	@ApiOperation(value = "Cadastrar Cliente")
 	@ApiResponses(value = { 
-			@ApiResponse(code = 200, message = "Sucesso"),
+			@ApiResponse(code = 201, message = "Sucesso", response = Long.class),
+			@ApiResponse(code = 400, message = "Algum dado está incorreto.", response = ValidationErroDto.class),
 			@ApiResponse(code = 403, message = "Acesso negado"),
 			@ApiResponse(code = 500, message = "Erro ao processar sua requisição") })
-	@ResponseBody
+	@ResponseStatus(HttpStatus.CREATED)
 	public Long cadastrarCliente(
 			@Valid
 			@ApiParam(value = "Cliente", required = true, allowEmptyValue = false) 
-			@RequestBody(required = true) final ClienteDto cliente) {
+			@RequestBody(required = true) final ClienteDto clienteDto) {
 		
-		cliente.getIdade();
-		
-		log.info("Deu certo");
-		return null;
+		return clienteService.cadastrarCliente(clienteDto);
 	}
 	
 	@PutMapping(value = "/{id}")
 	@ApiOperation(value = "Atualizar Cliente", notes = "")
 	@ApiResponses(value = { 
-			@ApiResponse(code = 200, message = "Sucesso"),
+			@ApiResponse(code = 200, message = "Sucesso", response = Long.class),
+			@ApiResponse(code = 204, message = "Sucesso"),
+			@ApiResponse(code = 400, message = "Algum dado está incorreto.", response = ValidationErroDto.class),
 			@ApiResponse(code = 403, message = "Acesso negado"),
+			@ApiResponse(code = 404, message = "Nenhum cliente encontrado", response = ValidationErroDto.class),
 			@ApiResponse(code = 500, message = "Erro ao processar sua requisição") })
-	@ResponseStatus(HttpStatus.OK)
+	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void atualizarCliente(
 			@ApiParam(value = "Identificador", required = true, allowEmptyValue = false, example = "0", type = "int", name = "id") 
 			@PathVariable(required = false, name = "id") final Long id,
 			
 			@ApiParam(value = "Cliente", required = true, allowEmptyValue = false) 
-			@RequestBody(required = true) final ClienteDto cliente) {
-
-		log.info("Deu certo");
+			@RequestBody(required = true) final ClienteDto clienteDto) {
+		
+		clienteDto.setId(id);
+		
+		clienteService.atualizarTodosCamposDoCliente(clienteDto);
 	}
 	
 	@PatchMapping(value = "/{id}")
 	@ApiOperation(value = "Atualizar Parciamente Cliente", notes = "")
 	@ApiResponses(value = { 
-			@ApiResponse(code = 200, message = "Sucesso"),
+			@ApiResponse(code = 200, message = "Sucesso", response = Long.class),
+			@ApiResponse(code = 204, message = "Sucesso"),
+			@ApiResponse(code = 400, message = "Algum dado está incorreto.", response = ValidationErroDto.class),
 			@ApiResponse(code = 403, message = "Acesso negado"),
+			@ApiResponse(code = 404, message = "Nenhum cliente encontrado", response = ValidationErroDto.class),
 			@ApiResponse(code = 500, message = "Erro ao processar sua requisição") })
-	@ResponseStatus(HttpStatus.OK)
+	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void atualizarParcialCliente(
 			@ApiParam(value = "Identificador", required = true, allowEmptyValue = false, example = "0", type = "int", name = "id") 
 			@PathVariable(required = false, name = "id") final Long id,
 			
 			@ApiParam(value = "Cliente", required = true, allowEmptyValue = false) 
-			@RequestBody(required = true) final ClienteDto cliente) {
+			@RequestBody(required = true) final ClienteDto clienteDto) {
 
-		log.info("Deu certo");
+		clienteDto.setId(id);
+		
+		clienteService.atualizarParcialmenteDadosDoCliente(clienteDto);
 	}
+	
+	
 }

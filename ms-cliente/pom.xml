@@ -11,7 +11,7 @@
 	</parent>
 
 	<groupId>br.com.builders</groupId>
-	<artifactId>cliente</artifactId>
+	<artifactId>ms-cliente</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>cliente</name>
 	<description>Demo project for Spring Boot</description>
@@ -20,6 +20,8 @@
 		<java.version>11</java.version>
 		<spring-cloud.version>2021.0.1</spring-cloud.version>
 		<log4j2.version>2.17.1</log4j2.version>
+		<io.springfox.version>2.9.2</io.springfox.version>
+
 		<app.profiles>dev,hml,prod</app.profiles>
 	</properties>
 
@@ -70,24 +72,18 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- <dependency> -->
-		<!-- <groupId>org.springframework.cloud</groupId> -->
-		<!-- <artifactId>spring-cloud-starter-openfeign</artifactId> -->
-		<!-- </dependency> -->
-
 		<!-- https://mvnrepository.com/artifact/io.springfox/springfox-swagger2 -->
 		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger2</artifactId>
-			<version>2.9.2</version>
+			<version>${io.springfox.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger-ui</artifactId>
-			<version>2.9.2</version>
+			<version>${io.springfox.version}</version>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -111,18 +107,6 @@
 	</dependencies>
 
 
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>${spring-cloud.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
 	<build>
 		<resources>
 			<resource>
@@ -130,7 +114,6 @@
 				<filtering>true</filtering>
 			</resource>
 		</resources>
-
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
