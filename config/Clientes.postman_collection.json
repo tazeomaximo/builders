@@ -1,0 +1,165 @@
+{
+	"info": {
+		"_postman_id": "ef2b082d-9d3b-41ae-a16c-f1a5524c96bc",
+		"name": "Clientes",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Listar Cliente",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8202/ms-cliente/cliente?page=0&size=3&sortDir=DESC&sort=dataNascimento&field=dataNascimento&search=10/04/1987",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8202",
+					"path": [
+						"ms-cliente",
+						"cliente"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "3"
+						},
+						{
+							"key": "sortDir",
+							"value": "DESC"
+						},
+						{
+							"key": "sort",
+							"value": "dataNascimento"
+						},
+						{
+							"key": "field",
+							"value": "dataNascimento"
+						},
+						{
+							"key": "search",
+							"value": "10/04/1987"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cliente by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8202/ms-cliente/cliente/3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8202",
+					"path": [
+						"ms-cliente",
+						"cliente",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cadastrar Cliente",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"nome\": \"Jorge Santos\",\r\n    \"cpf\": \"64420973072\",\r\n    \"email\" : \"jogersantos@gmail.com\",\r\n    \"dataNascimento\": \"13/06/1998\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8202/ms-cliente/cliente",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8202",
+					"path": [
+						"ms-cliente",
+						"cliente"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Atualizar Cliente",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "    {\r\n        \"nome\": \"Taísa Silva Sauro\",\r\n        \"cpf\": \"68706075088\",\r\n        \"email\": \"taisa@gmail.com\",\r\n        \"dataNascimento\": \"03/07/1985\"\r\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8202/ms-cliente/cliente/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8202",
+					"path": [
+						"ms-cliente",
+						"cliente",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Atualizar Cliente Parcialmente",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"nome\": \"Diego\",\r\n    \"email\": \"diego@gmail.com\",\r\n    \"dataNascimento\": \"18/04/1987\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8202/ms-cliente/cliente/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8202",
+					"path": [
+						"ms-cliente",
+						"cliente",
+						"2"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
